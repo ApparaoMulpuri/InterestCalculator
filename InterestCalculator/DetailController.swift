@@ -8,6 +8,15 @@
 
 import UIKit
 
+enum InterestType {
+    case simple
+    case everyYear
+    case every2Years
+    case every3Years
+    case every4Years
+    case every5Years
+}
+
 class DetailController: UIViewController {
     
     @IBOutlet weak var amount: UITextField!
@@ -23,6 +32,8 @@ class DetailController: UIViewController {
     
     @IBOutlet weak var computeButton: UIButton!
 
+    var compoundInterestPeriodInYears :Int = 0
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
@@ -58,14 +69,53 @@ class DetailController: UIViewController {
 
     @IBAction func computeInterest(_ sender: UIButton) {
         
+        func computeInterestWithYears(years: Int) {
+            self.compoundInterestPeriodInYears = years
+            self.calculateInterest()
+        }
+        
+        let cancelAction = UIAlertAction.init(title: "Cancel", style: UIAlertActionStyle.cancel, handler: nil)
+        let actions = [cancelAction,
+                       UIAlertAction.init(title: "Simple Interest", style: UIAlertActionStyle.default, handler: {(alert: UIAlertAction!) in
+                        computeInterestWithYears(years: 0)
+                       }),
+                       UIAlertAction.init(title: "Every 1 Year", style: UIAlertActionStyle.default, handler: {(alert: UIAlertAction!) in
+                        computeInterestWithYears(years: 1)
+                       }),
+                       UIAlertAction.init(title: "Every 2 Years", style: UIAlertActionStyle.default, handler: {(alert: UIAlertAction!) in
+                        computeInterestWithYears(years: 2)
+                       }),
+                       UIAlertAction.init(title: "Every 3 Years", style: UIAlertActionStyle.default, handler: {(alert: UIAlertAction!) in
+                        computeInterestWithYears(years: 3)
+                       }),
+                       UIAlertAction.init(title: "Every 4 Years", style: UIAlertActionStyle.default, handler: {(alert: UIAlertAction!) in
+                        computeInterestWithYears(years: 4)
+                       }),
+                       UIAlertAction.init(title: "Every 5 Years", style: UIAlertActionStyle.default, handler: {(alert: UIAlertAction!) in
+                        computeInterestWithYears(years: 5)
+                       })
+        ]
+
+        
+        let alertController = UIAlertController.init(title: title, message: nil, preferredStyle: .alert) as UIAlertController
+        
+        for action: UIAlertAction in actions {
+            alertController.addAction(action)
+        }
+        
+        self.present(alertController, animated: true)
+    }
+    
+    
+    func calculateInterest() {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "dd/MM/yyyy"
         let fromDate = dateFormatter.date(from: (self.lendingDate.text)!)
-
-        let noOfDays =   (Calendar.current as NSCalendar).components(NSCalendar.Unit.day, from: fromDate!, to: Date(), options: NSCalendar.Options.searchBackwards).day
         
-
-        let years = noOfDays!/365
+        let noOfDays =   (Calendar.current as NSCalendar).components(NSCalendar.Unit.day, from: fromDate ?? Date(), to: Date(), options: NSCalendar.Options.searchBackwards).day
+        
+        
+        var years = noOfDays!/365
         let months = (noOfDays!%365)/30
         let days = (noOfDays!%365)%30
         
@@ -77,15 +127,27 @@ class DetailController: UIViewController {
         {
             self.duration.text = "\(months) months \(days) days"
         }
-
         
-        let totalAmt = Float(self.amount.text!)
+        
+        var totalAmt = Float(self.amount.text!)
         var totalInterest = 0
+        var compoundInterest = 0
 
         if (years > 0)
         {
-            let temp: Float = totalAmt!*((Float(self.interestRate.text!))!/12)
-            totalInterest = (Int(temp) * (years*12))/100
+            while years >= compoundInterestPeriodInYears && compoundInterestPeriodInYears != 0 {
+                let temp: Float = totalAmt!*((Float(self.interestRate.text!))!/12)
+                compoundInterest = (Int(temp) * compoundInterestPeriodInYears * 12)/100
+                
+                totalAmt = totalAmt! + Float(compoundInterest)
+                
+                years -= compoundInterestPeriodInYears
+            }
+
+            if years > 0 {
+                let temp: Float = totalAmt!*((Float(self.interestRate.text!))!/12)
+                totalInterest = (Int(temp) * (years*12))/100
+            }
         }
         
         //100*24*(13/12)/100
@@ -102,9 +164,9 @@ class DetailController: UIViewController {
         
         let temp: Float = (totalAmt)!*((Float(self.interestRate.text!))!/12)
         let intPerMonth = (Int(temp))/100
-
+        
         let totalAmoutWithInterest = Int(totalAmt!)+totalInterest
-
+        
         if let totalAmt = totalAmt {
             self.interestPerMonthLabel.text = "\(intPerMonth)"
             self.interestLabel.text = "\(totalInterest)"
@@ -112,6 +174,7 @@ class DetailController: UIViewController {
             
             self.totalAmt.text = "\(totalAmoutWithInterest)"
         }
+
     }
     
     
